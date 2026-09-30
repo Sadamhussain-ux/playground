@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breakpoint Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a slim toolbar, then one stage where all four frames sit on a shared baseline, scaled together to fit the window. */
+:root {
+  --bg: #eef0f3;
+  --stage: #e2e5ea;
+  --panel: #ffffff;
+  --fg: #1b1f27;
+  --muted: #5c6474;
+  --line: #cfd4dc;
+  --accent: #2f5bd3;
+  --accent-ink: #ffffff;
+  --bezel: #20242c;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171d; --stage: #0f1216; --panel: #1c2028; --fg: #e6e9ef;
+    --muted: #97a0b1; --line: #2d333e; --accent: #7196ff; --accent-ink: #0d1220;
+    --bezel: #050608; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171d; --stage: #0f1216; --panel: #1c2028; --fg: #e6e9ef;
+  --muted: #97a0b1; --line: #2d333e; --accent: #7196ff; --accent-ink: #0d1220;
+  --bezel: #050608; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 14px/1.45 var(--body);
+  display: flex; flex-direction: column;
+}
+
+/* Toolbar */
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.brand { font: 700 18px/1 var(--display); letter-spacing: -0.01em; white-space: nowrap; }
+.brand span { color: var(--accent); }
+form.load { display: flex; gap: 8px; flex: 1 1 360px; min-width: 0; }
+#url {
+  flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font: 14px var(--mono);
+}
+#url:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button {
+  font: 500 13px var(--body); padding: 9px 14px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button:hover { filter: brightness(1.05); }
+.tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tools label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+
+/* Stage */
+.stage {
+  flex: 1; min-height: 0; background: var(--stage); overflow: auto;
+  padding: 24px 20px;
+}
+.row { display: flex; align-items: flex-end; justify-content: center; gap: 28px; min-width: max-content; margin: 0 auto; }
+
+.device { display: flex; flex-direction: column; gap: 10px; }
+.meta { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.meta h2 { margin: 0; font: 700 14px/1.2 var(--display); }
+.rule {
+  font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
+}
+.dims { display: flex; align-items: center; gap: 4px; font: 12px var(--mono); color: var(--muted); }
+.dims input {
+  width: 58px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--panel); color: var(--fg); font: 12px var(--mono); font-variant-numeric: tabular-nums;
+}
+.frame {
+  background: var(--bezel); border-radius: 12px; padding: 8px; position: relative;
+  box-shadow: 0 10px 30px -18px rgba(0,0,0,.6);
+}
+.device[data-kind="mobile"] .frame { border-radius: 22px; padding: 10px 8px 14px; }
+.screen { overflow: hidden; background: #fff; border-radius: 4px; position: relative; }
+.screen iframe { border: 0; display: block; transform-origin: 0 0; background: #fff; }
+.empty {
+  position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+  padding: 16px; color: #6b7280; font: 13px var(--body); background: #f7f8fa;
+}
+
+.note {
+  padding: 10px 20px; font-size: 12px; color: var(--muted); background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+.note code { font-family: var(--mono); }
+
+@media (max-width: 700px) {
+  .row { flex-direction: column; align-items: center; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">Breakpoint<span>Bench</span></div>
+  <form class="load" id="loadForm">
+    <input id="url" type="text" inputmode="url" spellcheck="false" autocomplete="url"
+           placeholder="https://your-site.com" aria-label="Website address">
+    <button class="primary" type="submit">Load</button>
+  </form>
+  <div class="tools">
+    <button type="button" id="reload">Reload all</button>
+    <label for="fit"><input type="checkbox" id="fit" checked> Fit to window</label>
+  </div>
+</header>
+
+<main class="stage" id="stage">
+  <div class="row" id="row"></div>
+</main>
+
+<footer class="note">
+  Some sites refuse to be shown inside a frame (<code>X-Frame-Options</code> or <code>frame-ancestors</code>). If a frame stays blank, that site blocks embedding; your own site can allow it, or test it from <code>localhost</code>.
+</footer>
+
+<script>
+(function () {
+  // One representative size inside each of your breakpoint ranges. Widths are editable per frame.
+  const DEVICES = [
+    { kind: "mobile",  name: "Mobile",           rule: "< 500px",  w: 390,  h: 780 },
+    { kind: "tabP",    name: "Tablet portrait",  rule: "> 520px",  w: 600,  h: 880 },
+    { kind: "tabL",    name: "Tablet landscape", rule: "> 760px",  w: 880,  h: 620 },
+    { kind: "desktop", name: "Desktop",          rule: "> 992px",  w: 1366, h: 768 }
+  ];
+
+  const row = document.getElementById("row");
+  const stage = document.getElementById("stage");
+  const urlInput = document.getElementById("url");
+  const fitBox = document.getElementById("fit");
+  let current = "";
+
+  function build() {
+    row.innerHTML = "";
+    DEVICES.forEach((d, i) => {
+      const el = document.createElement("section");
+      el.className = "device";
+      el.dataset.kind = d.kind;
+      el.innerHTML = `
+        <div class="meta">
+          <h2>${d.name}</h2>
+          <span class="rule">${d.rule}</span>
+        </div>
+        <div class="frame"><div class="screen">
+          <iframe title="${d.name} preview" loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+          <div class="empty">Enter a website address above</div>
+        </div></div>
+        <div class="dims">
+          <input id="w${i}" type="number" min="200" max="3000" value="${d.w}" aria-label="${d.name} width">
+          ×
+          <input id="h${i}" type="number" min="200" max="3000" value="${d.h}" aria-label="${d.name} height">
+          px
+        </div>`;
+      row.appendChild(el);
+      d.el = el;
+      el.querySelector(`#w${i}`).addEventListener("change", e => { d.w = clamp(+e.target.value); layout(); });
+      el.querySelector(`#h${i}`).addEventListener("change", e => { d.h = clamp(+e.target.value); layout(); });
+    });
+  }
+
+  function clamp(v) { return Math.max(200, Math.min(3000, v || 200)); }
+
+  function layout() {
+    const narrow = window.innerWidth <= 700;
+    const gap = 28, pad = 40, chrome = 30, labels = 70;
+    let scale = 1;
+    if (fitBox.checked) {
+      const availW = stage.clientWidth - pad;
+      const availH = stage.clientHeight - pad - labels;
+      if (narrow) {
+        scale = Math.min(...DEVICES.map(d => (availW - chrome) / d.w));
+      } else {
+        const totalW = DEVICES.reduce((s, d) => s + d.w, 0);
+        const byW = (availW - gap * (DEVICES.length - 1) - chrome * DEVICES.length) / totalW;
+        const byH = (availH - chrome) / Math.max(...DEVICES.map(d => d.h));
+        scale = Math.min(byW, byH);
+      }
+      scale = Math.max(0.1, Math.min(1, scale));
+    }
+    DEVICES.forEach(d => {
+      const screen = d.el.querySelector(".screen");
+      const frame = d.el.querySelector("iframe");
+      screen.style.width = d.w * scale + "px";
+      screen.style.height = d.h * scale + "px";
+      frame.style.width = d.w + "px";
+      frame.style.height = d.h + "px";
+      frame.style.transform = `scale(${scale})`;
+    });
+  }
+
+  function normalise(raw) {
+    raw = raw.trim();
+    if (!raw) return "";
+    if (!/^[a-z]+:\/\//i.test(raw)) raw = "https://" + raw;
+    return raw;
+  }
+
+  function load(url) {
+    current = url;
+    DEVICES.forEach(d => {
+      const f = d.el.querySelector("iframe");
+      d.el.querySelector(".empty").hidden = !!url;
+      f.src = url || "about:blank";
+    });
+    const q = new URL(location.href);
+    if (url) q.searchParams.set("url", url); else q.searchParams.delete("url");
+    history.replaceState(null, "", q);
+  }
+
+  document.getElementById("loadForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const u = normalise(urlInput.value);
+    urlInput.value = u;
+    load(u);
+  });
+  document.getElementById("reload").addEventListener("click", () => load(current));
+  fitBox.addEventListener("change", layout);
+  window.addEventListener("resize", layout);
+
+  build();
+  const start = new URL(location.href).searchParams.get("url") || "";
+  urlInput.value = start;
+  layout();
+  if (start) load(normalise(start));
+})();
+</script>
+</body>
+</html>
