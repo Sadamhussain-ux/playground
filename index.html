@@ -38,6 +38,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--fg);
@@ -87,7 +88,7 @@ button:hover { filter: brightness(1.05); }
   background: var(--panel); color: var(--fg); font: 12px var(--mono); font-variant-numeric: tabular-nums;
 }
 .frame {
-  background: var(--bezel); border-radius: 12px; padding: 8px; position: relative;
+  width: fit-content; background: var(--bezel); border-radius: 12px; padding: 8px; position: relative;
   box-shadow: 0 10px 30px -18px rgba(0,0,0,.6);
 }
 .device[data-kind="mobile"] .frame { border-radius: 22px; padding: 10px 8px 14px; }
@@ -161,8 +162,7 @@ button:hover { filter: brightness(1.05); }
           <span class="rule">${d.rule}</span>
         </div>
         <div class="frame"><div class="screen">
-          <iframe title="${d.name} preview" loading="lazy"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+          <iframe title="${d.name} preview"></iframe>
           <div class="empty">Enter a website address above</div>
         </div></div>
         <div class="dims">
